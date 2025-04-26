@@ -49,7 +49,7 @@ def parse_time(time):
     splits = time.split(":")
     if len(splits) != 3:
         raise Exception("%s is not a valid time")
-    return splits[0], splits[1], splits[2]
+    return int(splits[0].strip()), int(splits[1].strip()), int(splits[2].strip())
 
 
 def hours_to_time(t):

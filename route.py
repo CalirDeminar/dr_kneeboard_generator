@@ -259,4 +259,4 @@ def get_font_size(img):
 
 
 if __name__ == "__main__":
-    Route("test", "caucasus", (0, 0, 0), (0, 30, 0)).save_boards()
+    Route("example", "caucasus", (0, 0, 0), (0, 30, 0)).save_boards()

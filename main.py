@@ -20,7 +20,7 @@ def main():
         raise Exception("%s route file not found" % route_name)
     if not os.path.exists("./data/%s" % map_name):
         raise Exception("%s map data not found" % map_name)
-    print(route_name, map_name, start_time, time_on_target)
+
     route = Route(route_name, map_name, start_time, time_on_target)
     if not os.path.exists("./" + route_name):
         os.mkdir("./" + route_name)
