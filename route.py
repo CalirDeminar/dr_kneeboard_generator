@@ -79,21 +79,53 @@ class Route:
 
     def draw_for_wp_index(self, index, draw, circle_radius, line_width):
         wp = self.waypoints[index]
-        (x, y) = self.map.get_pixels_for(wp.lat, wp.long)
-        draw.ellipse(
-            (
-                (x - circle_radius, y - circle_radius),
-                (x + circle_radius, y + circle_radius)
-            ),
-            (0, 0, 0, 0),
-            (0, 0, 0, 255),
-            line_width
-        )
+        (x_cur, y_cur) = self.map.get_pixels_for(wp.lat, wp.long)
+        is_ip = "IP" in wp.tags
+        is_tgt = "TGT" in wp.tags
+
+        if is_ip or is_tgt:
+            if wp.bearing_from_last is None:
+                raise Exception("IP and TgT must not be the first waypoint in a route")
+
+            if is_tgt:
+                draw.regular_polygon(
+                    (x_cur, y_cur, circle_radius),
+                    3,
+                    120 + self.map.get_angle_off_north(wp.lat, wp.long) - wp.bearing_from_last,
+                    (0, 0, 0, 0),
+                    (0, 0, 0, 255),
+                    line_width
+                )
+            if is_ip:
+                draw.regular_polygon(
+                    (x_cur, y_cur, circle_radius),
+                    4,
+                    self.map.get_angle_off_north(wp.lat, wp.long) - wp.bearing_from_last,
+                    (0, 0, 0, 0),
+                    (0, 0, 0, 255),
+                    line_width
+                )
+        else:
+            draw.ellipse(
+                (
+                    (x_cur - circle_radius, y_cur - circle_radius),
+                    (x_cur + circle_radius, y_cur + circle_radius)
+                ),
+                (0, 0, 0, 0),
+                (0, 0, 0, 255),
+                line_width
+            )
 
     def draw_route_for_wp_from_prev(self, index, draw, circle_radius, line_width):
         if index > 0:
             wp = self.waypoints[index]
             prev = self.waypoints[index-1]
+
+            wp_radius = circle_radius
+            if "TGT" in wp.tags:
+                wp_radius = circle_radius * 0.55
+            if "IP" in wp.tags:
+                wp_radius = circle_radius * 0.75
 
             (x, y) = self.map.get_pixels_for(wp.lat, wp.long)
             (x_prev, y_prev) = self.map.get_pixels_for(prev.lat, prev.long)
@@ -103,7 +135,7 @@ class Route:
             draw.line(
                 (
                     (x_prev - (circle_radius * math.cos(angle)), y_prev - (circle_radius * math.sin(angle))),
-                    (x + (circle_radius * math.cos(angle)), y + (circle_radius * math.sin(angle)))
+                    (x + (wp_radius * math.cos(angle)), y + (wp_radius * math.sin(angle)))
                 ),
                 (0, 0, 0),
                 line_width

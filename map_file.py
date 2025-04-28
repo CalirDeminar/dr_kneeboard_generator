@@ -12,11 +12,23 @@ class MapFile:
     # (lat, long), (x, y)
     coordinate_map = None
     mag_var = 0
+    angle_off_north = None
 
     def __init__(self, dcs_map_name):
         self.name = dcs_map_name
         self.filename = "./data/%s/map.jpg" % dcs_map_name
         self.coordinate_map = import_pixel_map(dcs_map_name)
+
+    def get_angle_off_north(self, lat, long):
+        (lat_1, _, _) = lat
+        (long_1, _, _) = long
+
+        (x_1, y_1) = self.get_pixels_for((lat_1, 0, 0), (long_1, 0, 0))
+        (x_2, y_2) = self.get_pixels_for((lat_1+1, 0, 0), (long_1, 0, 0))
+        delta_y = y_2 - y_1
+        delta_x = x_2 - x_1
+        angle = math.degrees(math.atan(delta_x/delta_y))
+        return angle
 
     def get_map_image(self):
         return Image.open("./data/%s/map.jpg" % self.name)
