@@ -98,11 +98,14 @@ class Route:
 
         return width * margin_ratio, height * margin_ratio
 
-    def draw_for_wp_index(self, index, draw, circle_radius, line_width):
+    def draw_for_wp_index(self, index, draw, circle_radius, line_width, is_focused):
         wp = self.waypoints[index]
         (x_cur, y_cur) = self.map.get_pixels_for(wp.lat, wp.long)
         is_ip = "IP" in wp.tags
         is_tgt = "TGT" in wp.tags
+        alpha = 150
+        if is_focused:
+            alpha = 255
 
         if is_ip or is_tgt:
             if wp.bearing_from_last is None:
@@ -113,18 +116,16 @@ class Route:
                     (x_cur, y_cur, circle_radius),
                     3,
                     120 + self.map.get_angle_off_north(wp.lat, wp.long) - wp.bearing_from_last,
-                    (0, 0, 0, 0),
-                    (0, 0, 0, 255),
-                    line_width
+                    outline=(0, 0, 0, alpha),
+                    width=line_width
                 )
             if is_ip:
                 draw.regular_polygon(
                     (x_cur, y_cur, circle_radius),
                     4,
                     self.map.get_angle_off_north(wp.lat, wp.long) - wp.bearing_from_last,
-                    (0, 0, 0, 0),
-                    (0, 0, 0, 255),
-                    line_width
+                    outline=(0, 0, 0, alpha),
+                    width=line_width
                 )
         else:
             draw.ellipse(
@@ -132,12 +133,11 @@ class Route:
                     (x_cur - circle_radius, y_cur - circle_radius),
                     (x_cur + circle_radius, y_cur + circle_radius)
                 ),
-                (0, 0, 0, 0),
-                (0, 0, 0, 255),
-                line_width
+                outline=(0, 0, 0, alpha),
+                width=line_width
             )
 
-    def draw_route_for_wp_from_prev(self, index, draw, circle_radius, line_width):
+    def draw_route_for_wp_from_prev(self, index, draw, circle_radius, line_width, is_focused):
         if index > 0:
             wp = self.waypoints[index]
             prev = self.waypoints[index-1]
@@ -151,6 +151,10 @@ class Route:
             (x, y) = self.map.get_pixels_for(wp.lat, wp.long)
             (x_prev, y_prev) = self.map.get_pixels_for(prev.lat, prev.long)
 
+            alpha = 150
+            if is_focused:
+                alpha = 255
+
             angle = math.atan2(y_prev - y, x_prev - x)
 
             draw.line(
@@ -158,7 +162,7 @@ class Route:
                     (x_prev - (circle_radius * math.cos(angle)), y_prev - (circle_radius * math.sin(angle))),
                     (x + (wp_radius * math.cos(angle)), y + (wp_radius * math.sin(angle)))
                 ),
-                (0, 0, 0),
+                (0, 0, 0, alpha),
                 line_width
             )
 
@@ -296,8 +300,10 @@ class Route:
         circle_radius = min(math.floor(board_width * waypoint_circle_radius_ratio), waypoint_circle_max_rad)
         line_width = min(math.floor(board_width * waypoint_circle_width_ratio), waypoint_circle_max_width)
         for i, wp in enumerate(self.waypoints):
-            self.draw_for_wp_index(i, draw, circle_radius, line_width)
-            self.draw_route_for_wp_from_prev(i, draw, circle_radius, line_width)
+            is_current = i == index
+            is_previous = i == index - 1
+            self.draw_for_wp_index(i, draw, circle_radius, line_width, is_previous or is_current)
+            self.draw_route_for_wp_from_prev(i, draw, circle_radius, line_width, is_current)
         return img
 
     def save_boards(self):
