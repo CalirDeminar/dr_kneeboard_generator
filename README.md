@@ -26,6 +26,8 @@ Tags for a waypoint can be:
 - FI - Fence In - TBI
 - FO - Fence Out - TBI
 - FIX - Navigation fix point - TBI
+- MAGVAR*+/- some decimal* - e.g. `MAGVAR-1.2` - The magnetic declination for this waypoint.
+    The first of these tags will be used as the magnetic declination for the route. If not set will default to 0.0
 
 ### Command Arguments
 An example calling of the tool looks like `python main.py test caucasus 00:30:00`

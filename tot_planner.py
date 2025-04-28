@@ -2,7 +2,7 @@ import math
 
 
 # returns shape (Speed, hold_time_hrs) or None
-def find_speed_and_hold(distances, dash_speed, time_hrs, min_cruise_speed=300):
+def find_speed_and_hold(distances, dash_speed, time_hrs, min_cruise_speed=360):
     distances = list(map(lambda i:  0 if i is None else i, distances))
     cruise = distances[0:-1]
     dash_distance = distances[-1]
@@ -11,9 +11,10 @@ def find_speed_and_hold(distances, dash_speed, time_hrs, min_cruise_speed=300):
     dash_duration = (dash_distance/dash_speed)
     cruise_time = time_hrs-dash_duration
     speed_options = [240, 300, 360, 420, 490, 560]
+    available_speeds = list(filter(lambda s: s >= min_cruise_speed, speed_options))
     speed_times = list(filter(
         lambda t: t < cruise_time,
-        list(map(lambda s: cruise_distance/s, speed_options))
+        list(map(lambda s: cruise_distance/s, available_speeds))
     ))
     best_time = speed_times[0]
     hold = time_hrs - best_time - dash_duration

@@ -38,6 +38,26 @@ class Route:
         self.map = MapFile(dcs_map_name)
         self.start_time = start_time
         self.time_on_target = time_on_target
+        self.set_wp_bearings()
+        self.set_tot_times()
+        self.set_map_magvar()
+
+    def set_map_magvar(self):
+        all_tags = []
+        for wp in self.waypoints:
+            for tag in wp.tags:
+                all_tags.append(tag)
+
+        magvar_tags = list(filter(lambda tag: "MAGVAR" in tag, all_tags))
+
+        if len(magvar_tags) > 0:
+            working_tag = magvar_tags[0].replace("MAGVAR", "").strip()
+            try:
+                self.map.mag_var = float(working_tag)
+            except ValueError:
+                return
+
+    def set_wp_bearings(self):
         for wp in self.waypoints:
             if wp.index > 0:
                 prev = self.waypoints[wp.index-1]
@@ -46,7 +66,8 @@ class Route:
             if wp.index < len(self.waypoints)-1:
                 next_wp = self.waypoints[wp.index + 1]
                 wp.bearing_to_next = next_wp.bearing_from(wp)
-        # tot
+
+    def set_tot_times(self):
         [target_wp] = [x for x in self.waypoints if "TGT" in x.tags]
         timed_route = self.waypoints[0:target_wp.index+1]
 

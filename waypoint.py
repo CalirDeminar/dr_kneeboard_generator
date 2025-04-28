@@ -16,7 +16,7 @@ class WayPoint:
     time = None
     tags = []
     speed = None
-    min_alt=None
+    min_alt = None
 
     def __init__(self, string_list_to_parse, index):
         if len(string_list_to_parse) < 7:
