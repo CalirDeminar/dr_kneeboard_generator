@@ -16,6 +16,7 @@ class WayPoint:
     time = None
     tags = []
     speed = None
+    min_alt=None
 
     def __init__(self, string_list_to_parse, index):
         if len(string_list_to_parse) < 7:
@@ -34,7 +35,21 @@ class WayPoint:
         self.lat = lat
         self.long = long
         self.index = index
-        self.tags = list(map(lambda i: i.strip(), string_list_to_parse[7:]))
+        taggables = list(map(lambda i: i.strip(), string_list_to_parse[7:]))
+        digit_tags = list(
+            filter(
+                lambda i: i.isdigit(),
+                taggables
+            )
+        )
+        if len(digit_tags) > 0:
+            self.min_alt = int(digit_tags[0])
+        self.tags = list(
+            filter(
+                lambda i: not i.isdigit(),
+                taggables
+            )
+        )
 
     def bearing_from(self, previous):
         own_lat = math.radians(self.lat[0] + (self.lat[1]/60) + (self.lat[2]/3600))

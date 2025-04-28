@@ -171,11 +171,16 @@ class Route:
         if wp.speed is not None:
             speed = "%skts" % wp.speed
 
+        min_alt = "N/A"
+        if wp.min_alt is not None:
+            min_alt = f"{wp.min_alt:,}ft"
+
         lines = [
             ("WP:", wp.name),
             ("MC:", heading),
             ("DIST:", distance),
-            ("ETE:", time),
+            ("ETA:", time),
+            ("ESA:", min_alt),
             ("TAS:", speed),
             ("NMC:", next_heading)
         ]

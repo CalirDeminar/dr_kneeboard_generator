@@ -20,6 +20,7 @@ The columns for each WP are:
 - Any additional tags for this waypoint
 
 Tags for a waypoint can be:
+- *Some Positive Integer* - Minimum terrain altitude for leg
 - TGT - marks the waypoint as the target. This is what the time on target calculations will aimed to get to on time
 - IP - TBI
 - FI - Fence In - TBI
