@@ -1,7 +1,7 @@
 import csv
 import math
 from waypoint import WayPoint
-from map_file import MapFile
+from map_file import MapFile, find_map_from_wp
 from tot_planner import get_waypoint_times
 import PIL
 from PIL import ImageDraw
@@ -26,7 +26,7 @@ class Route:
     cruise_speed = None
     dash_speed = 500
 
-    def __init__(self, route_name, dcs_map_name, start_time=(0, 0, 0), time_on_target=None):
+    def __init__(self, route_name, start_time=(0, 0, 0), time_on_target=None):
         route_filename = "./data/routes/%s.csv" % route_name
 
         with open(route_filename, newline='') as csv_file:
@@ -34,6 +34,11 @@ class Route:
             for i, record in enumerate(reader):
                 if i > 0:
                     self.waypoints.append(WayPoint(record, i-1))
+        if len(self.waypoints) < 1:
+            raise Exception("Empty route")
+        dcs_map_name = find_map_from_wp(self.waypoints[0].lat, self.waypoints[0].long)
+        if dcs_map_name is None:
+            raise Exception("No map data for specified route")
         self.name = route_name
         self.map = MapFile(dcs_map_name)
         self.start_time = start_time
@@ -323,4 +328,4 @@ def get_font_size(img):
 
 
 if __name__ == "__main__":
-    Route("example", "caucasus", (0, 0, 0), (0, 30, 0)).save_boards()
+    Route("example", (0, 0, 0), (0, 30, 0)).save_boards()

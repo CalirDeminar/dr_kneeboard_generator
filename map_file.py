@@ -1,6 +1,7 @@
 import csv
 import math
 from PIL import Image
+import os
 
 
 class MapFile:
@@ -103,9 +104,34 @@ def import_pixel_map(dcs_map_name):
     return output
 
 
+def find_pixel_map_lat_long_bounds(dcs_map_name):
+    pixel_map = import_pixel_map(dcs_map_name)
+    keys = list(pixel_map.keys())
+    lat_set = set(map(lambda i: i[0], keys))
+    long_set = set(map(lambda i: i[1], keys))
+    return (min(lat_set), max(lat_set)), (min(long_set), max(long_set))
+
+
+def find_map_from_wp(lat, long):
+    (lat_d, _, _) = lat
+    (long_d, _, _) = long
+    data_folders = list(filter(lambda i: i != "routes", os.listdir("./data")))
+    lat_long_bounds = list(map(lambda i: (i, find_pixel_map_lat_long_bounds(i)), data_folders))
+    eligible_bounds = list(
+        filter(
+            lambda i:
+            i[1][0][1] > lat_d >= i[1][0][0] and i[1][1][1] > long_d >= i[1][1][0],
+            lat_long_bounds
+        )
+    )
+    if len(eligible_bounds) > 0:
+        return eligible_bounds[0][0]
+    return None
+
+
 if __name__ == '__main__':
     test_map = MapFile("caucasus")
     test_map.get_nearest_lat_long((44, 0, 0), (39, 0, 0))
     test_map.get_nearest_lat_long((41, 0, 0), (39, 0, 0))
     test_map.get_nearest_lat_long((41, 0, 0), (39, 0, 0), False)
-    print(test_map.get_pixels_for((41, 0, 0), (39, 0, 0)))
+    find_map_from_wp((48, 0, 0), (3, 0, 0))

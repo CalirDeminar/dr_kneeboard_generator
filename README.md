@@ -9,6 +9,9 @@ A tool for flight-simmers to turn a flight route in a CSV file into a set of kne
 ## Usage
 ### Route File
 The route file is a CSV in the `./data/routes` folder
+The tool will search for a map file that the starting coordinate of a route falls within. 
+If such a map cannot be found the tool will give an error
+
 The columns for each WP are:
 - Waypoint Name - any text
 - Latitude degrees component
@@ -30,12 +33,9 @@ Tags for a waypoint can be:
     The first of these tags will be used as the magnetic declination for the route. If not set will default to 0.0
 
 ### Command Arguments
-An example calling of the tool looks like `python main.py test caucasus 00:30:00`
+An example calling of the tool looks like `python main.py test 00:30:00`
 The arguments are:
 - Route Name
-- Map Name - options:
-    - caucasus
-    - germany
 - Optional: start time in hours:minutes:seconds
     - if not included defaults to 00:00:00
 - ToT in hours:minutes:seconds
