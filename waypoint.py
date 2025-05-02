@@ -1,6 +1,7 @@
 import math
 import haversine
 from haversine import Unit
+import unittest
 
 
 class WayPoint:
@@ -58,11 +59,10 @@ class WayPoint:
         prev_lat = math.radians(previous.lat[0] + (previous.lat[1]/60) + (previous.lat[2]/3600))
         prev_long = math.radians(previous.long[0] + (previous.long[1]/60) + (previous.long[2]/3600))
 
-        x = math.cos(prev_lat) * math.sin(prev_long-own_long)
-        y = math.cos(own_lat) * math.sin(prev_lat) - math.sin(own_lat) * math.cos(prev_lat) * math.cos(prev_long-own_long)
+        x = math.cos(own_lat) * math.sin(own_long-prev_long)
+        y = math.cos(prev_lat) * math.sin(own_lat) - math.sin(prev_lat) * math.cos(own_lat) * math.cos(own_long-prev_long)
         output_rad = math.atan2(x, y)
-
-        return math.floor((math.degrees(output_rad) + 180) % 360)
+        return round((output_rad*180/math.pi + 360) % 360)
 
     def to_degrees(self):
         return (
@@ -72,3 +72,57 @@ class WayPoint:
 
     def distance_from(self, wp):
         return haversine.haversine(self.to_degrees(), wp.to_degrees(), unit=Unit.NAUTICAL_MILES)
+
+
+class TestWaypoint(unittest.TestCase):
+    def test_bearing_correct_on_long(self):
+        self.assertEqual(
+            WayPoint(["wp1", "0", "0", "0", "0", "0", "0"], 0).bearing_from(
+                WayPoint(["wp2", "1", "0", "0", "0", "0", "0"], 1)
+            ),
+            180
+        )
+        self.assertEqual(
+            WayPoint(["wp1", "1", "0", "0", "0", "0", "0"], 0).bearing_from(
+                WayPoint(["wp2", "0", "0", "0", "0", "0", "0"], 1)
+            ),
+            0
+        )
+
+    def test_bearing_correct_on_lat(self):
+        self.assertEqual(
+            WayPoint(["wp1", "0", "0", "0", "0", "0", "0"], 0).bearing_from(
+                WayPoint(["wp2", "0", "0", "0", "1", "0", "0"], 1)
+            ),
+            270
+        )
+        self.assertEqual(
+            WayPoint(["wp1", "0", "0", "0", "1", "0", "0"], 0).bearing_from(
+                WayPoint(["wp2", "0", "0", "0", "0", "0", "0"], 1)
+            ),
+            90
+        )
+
+    def test_bearing_correct_on_lat_long(self):
+        self.assertEqual(
+            WayPoint(["wp1", "0", "0", "0", "0", "0", "0"], 0).bearing_from(
+                WayPoint(["wp2", "1", "0", "0", "1", "0", "0"], 1)
+            ),
+            225
+        )
+        self.assertEqual(
+            WayPoint(["wp1", "1", "0", "0", "1", "0", "0"], 0).bearing_from(
+                WayPoint(["wp2", "0", "0", "0", "0", "0", "0"], 1)
+            ),
+            45
+        )
+        self.assertEqual(
+            WayPoint(["wp1", "46", "0", "0", "46", "0", "0"], 0).bearing_from(
+                WayPoint(["wp2", "45", "0", "0", "45", "0", "0"], 1)
+            ),
+            35
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -321,6 +321,51 @@ class Route:
         full_board = self.create_board_for_wp(i)
         full_board.save("./%s/%s-Overview.jpg" % (self.name, self.map.name))
 
+    def debug_doghouse(self):
+        for index, wp in enumerate(self.waypoints):
+
+
+            heading = "N/A"
+            if index > 0:
+                prev = self.waypoints[index - 1]
+                heading = "%s°" % (wp.bearing_from(prev))
+            next_heading = "N/A"
+
+            if index < len(self.waypoints) - 1:
+                next_wp = self.waypoints[index + 1]
+                next_heading = "%s°" % (next_wp.bearing_from(wp))
+
+            distance = "N/A"
+            if wp.distance_from_last is not None:
+                distance = "%snm" % round(wp.distance_from_last, 1)
+
+            time = "N/A"
+            if wp.time is not None:
+                hours = ("%s" % wp.time[0]).zfill(2)
+                minutes = ("%s" % wp.time[1]).zfill(2)
+                seconds = ("%s" % wp.time[2]).zfill(2)
+                time = f"{hours}:{minutes}:{seconds}"
+
+            speed = "N/A"
+            if wp.speed is not None:
+                speed = "%skts" % wp.speed
+
+            min_alt = "N/A"
+            if wp.min_alt is not None:
+                min_alt = f"{wp.min_alt:,}ft"
+
+            lines = [
+                ("WP:", wp.name),
+                ("MC:", heading),
+                ("DIST:", distance),
+                ("ETA:", time),
+                ("ESA:", min_alt),
+                ("TAS:", speed),
+                ("NMC:", next_heading)
+            ]
+            print(lines)
+        print(("Magvar: ", self.map.mag_var))
+
 
 def get_font_size(img):
     line_height_ratio = 0.02
@@ -328,4 +373,6 @@ def get_font_size(img):
 
 
 if __name__ == "__main__":
-    Route("example", (0, 0, 0), (0, 30, 0)).save_boards()
+    # Route("example", (0, 0, 0), (0, 30, 0)).save_boards()
+    Route("01-05-2025-training", (0, 0, 0), (0, 30, 0)).debug_doghouse()
+
