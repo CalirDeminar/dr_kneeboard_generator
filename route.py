@@ -211,12 +211,12 @@ class Route:
         heading = "N/A"
         if index > 0:
             prev = self.waypoints[index-1]
-            heading = "%s°" % (wp.bearing_from(prev)-self.map.mag_var)
+            heading = "%s°" % ((wp.bearing_from(prev)-self.map.mag_var) % 360)
         next_heading = "N/A"
 
         if index < len(self.waypoints)-1:
             next_wp = self.waypoints[index+1]
-            next_heading = "%s°" % (next_wp.bearing_from(wp)-self.map.mag_var)
+            next_heading = "%s°" % ((next_wp.bearing_from(wp)-self.map.mag_var) % 360)
 
         distance = "N/A"
         if wp.distance_from_last is not None:
@@ -316,7 +316,9 @@ class Route:
             board = self.create_board_for_wp(i)
             cropped_board = self.crop_board_for_wp(i, board)
             annotated_board = self.add_doghouse_for_wp(i, cropped_board)
-            annotated_board.save("./%s/%s-wp%s.jpg" % (self.name, self.map.name, i+1))
+            board_name = "./%s/%s-wp%s.jpg" % (self.name, self.map.name, i+1)
+            annotated_board.save(board_name)
+            print("%s/%s  %s Board Complete" % (i+1, len(self.waypoints), board_name))
 
         full_board = self.create_board_for_wp(i)
         full_board.save("./%s/%s-Overview.jpg" % (self.name, self.map.name))
@@ -324,16 +326,15 @@ class Route:
     def debug_doghouse(self):
         for index, wp in enumerate(self.waypoints):
 
-
             heading = "N/A"
             if index > 0:
                 prev = self.waypoints[index - 1]
-                heading = "%s°" % (wp.bearing_from(prev))
+                heading = "%s°" % ((wp.bearing_from(prev) - self.map.mag_var) % 360)
             next_heading = "N/A"
 
             if index < len(self.waypoints) - 1:
                 next_wp = self.waypoints[index + 1]
-                next_heading = "%s°" % (next_wp.bearing_from(wp))
+                next_heading = "%s°" % ((next_wp.bearing_from(wp) - self.map.mag_var) % 360)
 
             distance = "N/A"
             if wp.distance_from_last is not None:
