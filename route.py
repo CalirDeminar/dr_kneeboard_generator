@@ -316,6 +316,7 @@ class Route:
             board = self.create_board_for_wp(i)
             cropped_board = self.crop_board_for_wp(i, board)
             annotated_board = self.add_doghouse_for_wp(i, cropped_board)
+            annotated_board = annotated_board.resize((1600, 2400), resample=PIL.Image.BILINEAR)
             board_name = "./%s/%s-wp%s.jpg" % (self.name, self.map.name, i+1)
             annotated_board.save(board_name)
             print("%s/%s  %s Board Complete" % (i+1, len(self.waypoints), board_name))
@@ -367,6 +368,35 @@ class Route:
             print(lines)
         print(("Magvar: ", self.map.mag_var))
 
+    def write_flight_notes(self):
+        output = ""
+        max_name_len = 0
+        for wp in self.waypoints:
+            if len(wp.name) > max_name_len:
+                max_name_len = len(wp.name)
+        for wp in self.waypoints:
+            lat_second_round = 0
+            if wp.lat[2] >= 30:
+                lat_second_round = 1
+            long_second_round = 0
+            if wp.long[2] >= 30:
+                long_second_round = 1
+
+            name_padding = " " * (max_name_len - len(wp.name))
+            output += (
+                    "%s%s\tN%02d %02d E%02d %02d\t%s\n" %
+                    (
+                        wp.name,
+                        name_padding,
+                        wp.lat[0],
+                        wp.lat[1] + lat_second_round,
+                        wp.long[0],
+                        wp.long[1] + long_second_round,
+                        ", ".join(wp.tags)
+                    )
+            )
+        return output
+
 
 def get_font_size(img):
     line_height_ratio = 0.02
@@ -375,5 +405,5 @@ def get_font_size(img):
 
 if __name__ == "__main__":
     # Route("example", (0, 0, 0), (0, 30, 0)).save_boards()
-    Route("01-05-2025-training", (0, 0, 0), (0, 30, 0)).debug_doghouse()
+    print(Route("01-05-2025-training", (0, 0, 0), (0, 30, 0)).write_flight_notes())
 

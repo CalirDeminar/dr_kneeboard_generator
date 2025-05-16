@@ -22,7 +22,10 @@ def main():
     route = Route(route_name, start_time, time_on_target)
     if not os.path.exists("./" + route_name):
         os.mkdir("./" + route_name)
+    with open("./%s/notes.txt" % route_name, "w") as f:
+        f.write(route.write_flight_notes())
     route.save_boards()
+
 
 
 if __name__ == '__main__':
