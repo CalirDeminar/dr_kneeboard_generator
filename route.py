@@ -4,7 +4,7 @@ from waypoint import WayPoint
 from map_file import MapFile, find_map_from_wp
 from tot_planner import get_waypoint_times, time_to_minutes
 import PIL
-from PIL import ImageDraw
+from PIL import ImageDraw, Image, ImageOps
 import time
 PIL.Image.MAX_IMAGE_PIXELS = 10000000000
 
@@ -166,7 +166,7 @@ class Route:
                 width=line_width
             )
 
-    def draw_route_for_wp_from_prev(self, index, draw, circle_radius, line_width, is_focused):
+    def draw_route_for_wp_from_prev(self, img, index, draw, circle_radius, line_width, is_focused):
         if index > 0:
             wp = self.waypoints[index]
             prev = self.waypoints[index-1]
@@ -206,7 +206,6 @@ class Route:
                 perp = angle + math.radians(90)
                 x_distance = math.floor(math.cos(perp)*tag_len)
                 y_distance = math.floor(math.sin(perp)*tag_len)
-                print((x_distance, y_distance))
 
                 for i in range(1, minutes_to_draw + 1):
                     x_center = wp.x_pixel + (minute_x_distance * i)
@@ -219,13 +218,29 @@ class Route:
                         (0, 0, 0, 255),
                         math.floor(line_width/2)
                     )
-                    draw.text(
-                        (x_center + (x_distance * 2), y_center + (y_distance * 2)),
-                        "%s" % i,
-                        fill="black",
-                        align="left",
-                        font_size=50,
+                    temp = Image.new('L', (55, 55))
+                    d = ImageDraw.Draw(temp)
+                    d.text((0, 0), "%s" % i, fill=255, font_size=50, align="left")
+
+                    text_angle = ((360-math.degrees(angle)) + 360 + 90) % 360
+                    if 270 > text_angle > 90:
+                        direction_invert = -1
+
+                    rot = temp.rotate(text_angle, expand=1)
+                    direction_invert = 1
+
+                    img.paste(
+                        ImageOps.colorize(rot, (0, 0, 0, 0), (0, 0, 0, 255)),
+                        (math.floor((x_center + (x_distance * 2 * direction_invert))), math.floor(y_center + (y_distance * 2 * direction_invert))),
+                        rot
                     )
+                    # draw.text(
+                    #     (x_center + (x_distance * 2), y_center + (y_distance * 2)),
+                    #     "%s" % i,
+                    #     fill="black",
+                    #     align="left",
+                    #     font_size=50,
+                    # )
 
     def crop_board_for_wp(self, index, img):
         wp = self.waypoints[index]
@@ -364,12 +379,11 @@ class Route:
         circle_radius = min(math.floor(board_width * waypoint_circle_radius_ratio), waypoint_circle_max_rad)
         line_width = min(math.floor(board_width * waypoint_circle_width_ratio), waypoint_circle_max_width)
         for i, wp in enumerate(self.waypoints):
-            start = time.perf_counter()
             is_current = i == index
             is_previous = i == index - 1
             self.draw_for_wp_index(i, draw, circle_radius, line_width, is_previous or is_current)
 
-            self.draw_route_for_wp_from_prev(i, draw, circle_radius, line_width, is_current)
+            self.draw_route_for_wp_from_prev(img, i,  draw, circle_radius, line_width, is_current)
         return img
 
     def save_boards(self):
