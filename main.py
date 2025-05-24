@@ -7,7 +7,7 @@ from tot_planner import parse_time
 
 def main():
     route_name = sys.argv[1]
-    route_file = "./data/routes/%s.csv" % route_name
+    route_file = "./routes/%s.csv" % route_name
     # Args 2 and 3 are either ToT and blank or Start Time and ToT
     start_time = (0, 0, 0)
     time_on_target = None

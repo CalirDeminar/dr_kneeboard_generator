@@ -3,6 +3,8 @@ import math
 
 # returns shape (Speed, hold_time_hrs) or None
 def find_speed_and_hold(distances, dash_speed, time_hrs, min_cruise_speed=360):
+    if time_hrs is None:
+        return 420, 0
     distances = list(map(lambda i:  0 if i is None else i, distances))
     cruise = distances[0:-1]
     dash_distance = distances[-1]
@@ -22,9 +24,14 @@ def find_speed_and_hold(distances, dash_speed, time_hrs, min_cruise_speed=360):
 
 
 def get_waypoint_times(distances, start_time, time_on_target, dash_speed=500, min_cruise_speed=300):
-    duration_hrs = (time_on_target[0] - start_time[0]) +\
-                   ((time_on_target[1] - start_time[1])/60) +\
-                   ((time_on_target[2] - start_time[2])/3600)
+    print("Start: %s", start_time)
+    print("TOT: %s", time_on_target)
+
+    duration_hrs = None
+    if time_on_target is not None:
+        duration_hrs = (time_on_target[0] - start_time[0]) +\
+                       ((time_on_target[1] - start_time[1])/60) +\
+                       ((time_on_target[2] - start_time[2])/3600)
 
     speed_attempt = find_speed_and_hold(distances, dash_speed, duration_hrs, min_cruise_speed)
     if speed_attempt is None:
@@ -58,6 +65,13 @@ def hours_to_time(t):
     minutes = math.floor((t-hours)*60)
     seconds = math.floor(((t*60)-(hours*60)-minutes)*60)
     return hours, minutes, seconds
+
+
+def time_to_minutes(t):
+    seconds = t[2]/60
+    minutes = t[1]
+    hours = t[0]*60
+    return seconds + minutes + hours
 
 
 if __name__ == '__main__':

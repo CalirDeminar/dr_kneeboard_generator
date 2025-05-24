@@ -2,9 +2,10 @@ import csv
 import math
 from waypoint import WayPoint
 from map_file import MapFile, find_map_from_wp
-from tot_planner import get_waypoint_times
+from tot_planner import get_waypoint_times, time_to_minutes
 import PIL
 from PIL import ImageDraw
+import time
 PIL.Image.MAX_IMAGE_PIXELS = 10000000000
 
 aspect_ratio = 6 / 4
@@ -15,6 +16,8 @@ waypoint_circle_radius_ratio = 0.06
 waypoint_circle_width_ratio = 0.008
 waypoint_circle_max_rad = 100
 waypoint_circle_max_width = 20
+
+cropping_margin = 8000
 
 
 class Route:
@@ -27,7 +30,7 @@ class Route:
     dash_speed = 500
 
     def __init__(self, route_name, start_time=(0, 0, 0), time_on_target=None):
-        route_filename = "./data/routes/%s.csv" % route_name
+        route_filename = "./routes/%s.csv" % route_name
 
         with open(route_filename, newline='') as csv_file:
             reader = csv.reader(csv_file, delimiter=',', quotechar='|')
@@ -44,8 +47,27 @@ class Route:
         self.start_time = start_time
         self.time_on_target = time_on_target
         self.set_wp_bearings()
+        self.map_wp_pixels()
         self.set_tot_times()
         self.set_map_magvar()
+        self.max_x = max(map(lambda wp: wp.x_pixel, self.waypoints))
+        self.max_y = max(map(lambda wp: wp.y_pixel, self.waypoints))
+        self.min_x = min(map(lambda wp: wp.x_pixel, self.waypoints))
+        self.min_y = min(map(lambda wp: wp.y_pixel, self.waypoints))
+        self.img = self.map.get_map_image()
+
+    def map_wp_pixels(self):
+        for wp in self.waypoints:
+            (x, y) = self.map.get_pixels_for(wp.lat, wp.long)
+            wp.x_pixel = x
+            wp.y_pixel = y
+
+    def get_cropped_map_image(self):
+        img = self.img.copy()
+        (x_max, y_max) = img.size
+
+        img = img.crop((0, 0, min(self.max_x + cropping_margin, x_max), min(self.max_y + cropping_margin, y_max)))
+        return img
 
     def set_map_magvar(self):
         all_tags = []
@@ -92,10 +114,10 @@ class Route:
         current = self.waypoints[i]
         prev = self.waypoints[i-1]
 
-        (x_cur, y_cur) = self.map.get_pixels_for(current.lat, current.long)
-        (x_prev, y_prev) = self.map.get_pixels_for(prev.lat, prev.long)
+        # (x_cur, y_cur) = self.map.get_pixels_for(current.lat, current.long)
+        # (x_prev, y_prev) = self.map.get_pixels_for(prev.lat, prev.long)
 
-        height = math.sqrt((x_prev - x_cur) ** 2 + (y_prev - y_cur) ** 2) * margin_ratio
+        height = math.sqrt((prev.x_pixel - current.x_pixel) ** 2 + (prev.y_pixel - current.y_pixel) ** 2) * margin_ratio
         width = height * (1 / aspect_ratio)
 
         if height < min_height:
@@ -105,7 +127,9 @@ class Route:
 
     def draw_for_wp_index(self, index, draw, circle_radius, line_width, is_focused):
         wp = self.waypoints[index]
-        (x_cur, y_cur) = self.map.get_pixels_for(wp.lat, wp.long)
+        # (x_cur, y_cur) = self.map.get_pixels_for(wp.lat, wp.long)
+        x_cur = wp.x_pixel
+        y_cur = wp.y_pixel
         is_ip = "IP" in wp.tags
         is_tgt = "TGT" in wp.tags
         alpha = 150
@@ -153,37 +177,71 @@ class Route:
             if "IP" in wp.tags:
                 wp_radius = circle_radius * 0.75
 
-            (x, y) = self.map.get_pixels_for(wp.lat, wp.long)
-            (x_prev, y_prev) = self.map.get_pixels_for(prev.lat, prev.long)
+            # (x, y) = self.map.get_pixels_for(wp.lat, wp.long)
+            # (x_prev, y_prev) = self.map.get_pixels_for(prev.lat, prev.long)
 
             alpha = 150
             if is_focused:
                 alpha = 255
 
-            angle = math.atan2(y_prev - y, x_prev - x)
+            angle = math.atan2(prev.y_pixel - wp.y_pixel, prev.x_pixel - wp.x_pixel)
 
             draw.line(
                 (
-                    (x_prev - (circle_radius * math.cos(angle)), y_prev - (circle_radius * math.sin(angle))),
-                    (x + (wp_radius * math.cos(angle)), y + (wp_radius * math.sin(angle)))
+                    (prev.x_pixel - (circle_radius * math.cos(angle)), prev.y_pixel - (circle_radius * math.sin(angle))),
+                    (wp.x_pixel + (wp_radius * math.cos(angle)), wp.y_pixel + (wp_radius * math.sin(angle)))
                 ),
                 (0, 0, 0, alpha),
                 line_width
             )
+            if is_focused and wp.time is not None and prev.time is not None:
+                minutes_for_leg = time_to_minutes(wp.time) - time_to_minutes(prev.time)
+                minutes_to_draw = math.floor(minutes_for_leg)
+                minute_x_distance = (prev.x_pixel - wp.x_pixel) / minutes_for_leg
+                minute_y_distance = (prev.y_pixel - wp.y_pixel) / minutes_for_leg
+
+                tag_len = line_width * 3
+
+                # perp = (math.degrees(angle) + 90) % 360
+                perp = angle + math.radians(90)
+                x_distance = math.floor(math.cos(perp)*tag_len)
+                y_distance = math.floor(math.sin(perp)*tag_len)
+                print((x_distance, y_distance))
+
+                for i in range(1, minutes_to_draw + 1):
+                    x_center = wp.x_pixel + (minute_x_distance * i)
+                    y_center = wp.y_pixel + (minute_y_distance * i)
+                    draw.line(
+                        (
+                            (x_center + x_distance, y_center + y_distance),
+                            (x_center - x_distance, y_center - y_distance)
+                        ),
+                        (0, 0, 0, 255),
+                        math.floor(line_width/2)
+                    )
+                    draw.text(
+                        (x_center + (x_distance * 2), y_center + (y_distance * 2)),
+                        "%s" % i,
+                        fill="black",
+                        align="left",
+                        font_size=50,
+                    )
 
     def crop_board_for_wp(self, index, img):
         wp = self.waypoints[index]
-        (x, y) = self.map.get_pixels_for(wp.lat, wp.long)
+        # (x, y) = self.map.get_pixels_for(wp.lat, wp.long)
+        x = wp.x_pixel
+        y = wp.y_pixel
         (board_width, board_height) = self.kneeboard_width_for_wp_index(index)
         local_img = img
         if index > 0:
             prev = self.waypoints[index - 1]
-            (x_prev, y_prev) = self.map.get_pixels_for(prev.lat, prev.long)
+            # (x_prev, y_prev) = self.map.get_pixels_for(prev.lat, prev.long)
 
-            x_centre = math.floor((x + x_prev) / 2)
-            y_centre = math.floor((y + y_prev) / 2)
+            x_centre = math.floor((x + prev.x_pixel) / 2)
+            y_centre = math.floor((y + prev.y_pixel) / 2)
 
-            bearing_from_prev = math.degrees(math.atan2(y - y_prev, x - x_prev)) + 90
+            bearing_from_prev = math.degrees(math.atan2(y - prev.y_pixel, x - prev.x_pixel)) + 90
 
             local_img = img.rotate(bearing_from_prev, center=(x_centre, y_centre))
 
@@ -299,15 +357,18 @@ class Route:
         return img
 
     def create_board_for_wp(self, index):
-        img = self.map.get_map_image()
+        img = self.get_cropped_map_image()
+
         draw = ImageDraw.Draw(img, "RGBA")
         (board_height, board_width) = self.kneeboard_width_for_wp_index(index)
         circle_radius = min(math.floor(board_width * waypoint_circle_radius_ratio), waypoint_circle_max_rad)
         line_width = min(math.floor(board_width * waypoint_circle_width_ratio), waypoint_circle_max_width)
         for i, wp in enumerate(self.waypoints):
+            start = time.perf_counter()
             is_current = i == index
             is_previous = i == index - 1
             self.draw_for_wp_index(i, draw, circle_radius, line_width, is_previous or is_current)
+
             self.draw_route_for_wp_from_prev(i, draw, circle_radius, line_width, is_current)
         return img
 
@@ -405,5 +466,5 @@ def get_font_size(img):
 
 if __name__ == "__main__":
     # Route("example", (0, 0, 0), (0, 30, 0)).save_boards()
-    print(Route("01-05-2025-training", (0, 0, 0), (0, 30, 0)).write_flight_notes())
+    print(Route("01-05-2025-training", (0, 0, 0), (0, 30, 0)).save_boards())
 
